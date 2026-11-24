@@ -1,158 +1,195 @@
-# Welcome to the OnBotJava Code Editor
-
-If you are just starting out, click the '+' (Add File) icon in the top left corner.
-Enter your new file name, and then choose one of the many samples.
-If you just want to drive a basic robot, select the "BasicOpMode_Linear" sample.
-Select the "TeleOp" radio button, and then click "OK".
-
-The sample you chose will be renamed to match the name you entered, and it 
-will appear on the "project files" list in the left pane.
-
-To edit your code, just click on the desired file in the left hand pane, 
-and it will be loaded into this Code Editor window. Make any changes. You can also
-use Ctrl-F (or Cmd-F on Macs) to search the file you are working on.
-
-Once you are done, click the "Build Everything" icon at the bottom of this pane.
-This will build your OpModes and report any errors.
-If there are no errors, the OpModes will be stored on the Robot for immediate use.
-
-## Samples
-
-Samples may be chosen by selecting 'Example OpMode' from the 'File type:' dropdown.  Doing so
-will populate the dropdown to the immediate right with a list of samples to choose from.
-Sample names use a convention which helps to indicate their general, and specific, purpose.
-
-eg: The name's prefix describes the general purpose, which can be one of the following:
-
-* Basic:    This is a minimally functional OpMode used to illustrate the skeleton\/structure
-            of a particular style of OpMode.  These are bare bones examples.
-* Sensor:   This is a Sample OpMode that shows how to use a specific sensor.
-            It is not intended as a functioning robot, it is simply showing the minimal code
-            required to read and display the sensor values.
-* Robot:    This is a Sample OpMode that assumes a simple two-motor (differential) drive base.
-            It may be used to provide a common baseline driving OpMode, or
-            to demonstrate how a particular sensor or concept can be used to navigate.
-* Concept:	This is a sample OpMode that illustrates performing a specific function or concept.
-            These may be complex, but their operation will be explained clearly in the comments,
-            or the header should reference an external doc., guide or tutorial.
-
-For more help, visit the FTC Control System Wiki (https://github.com/FIRST-Tech-Challenge/FtcRobotController/wiki)
-
-Please report any encountered issues on [GitHub](https://github.com/FIRST-Tech-Challenge/FtcRobotController).
-
-## Projects
-
-A project is a collection of related files.  A project may be chosen by selecting 'Example Project'
-from the 'File type:' dropdown.  Doing so will populate the dropdown to the immediate right with 
-a list of projects to choose from.
-
-When selecting a project all of the related files appear in the left pane of the workspace 
-underneath a directory with the chosen project name.
-
-This is useful for example for ConceptExternalHardwareClass which has a dependency upon
-RobotHardware.  This feature simplifies the usage of this Concept example by automatically
-pulling in dependent classes.
-
-## What's Java 8?
-
-Java 8 provides more ways to help you write more concise, readable, and maintainable code
-for your robot.
-
-We're adding Java 8 editor support to this SDK release. 
-To enable support, you can enable `Enable beta Java 8 editor features` in the Settings menu.
-
-For an example, take the following code snippet from
-the `ConceptTelemetry`[0] sample you might have already seen in prior years
-
-```
-/**
- * As an illustration, the first line on our telemetry display will display the
- * battery voltage. The idea here is that it's expensive to compute the voltage
- * (at least for purposes of illustration) so you don't want to do it unless the
- * data is <em>actually</em> going to make it to the driver station (recall that
- * telemetry transmission is throttled to reduce bandwidth use.
- * Note that getBatteryVoltage() below returns 'Infinity' if there's no voltage
- * sensor attached.
+/*
+ * Copyright (c) 2025 FIRST
+ * All rights reserved.
  *
- * @see Telemetry#getMsTransmissionInterval()
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted (subject to the limitations in the disclaimer below) provided that
+ * the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this list
+ * of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice, this
+ * list of conditions and the following disclaimer in the documentation and/or
+ * other materials provided with the distribution.
+ *
+ * Neither the name of FIRST nor the names of its contributors may be used to
+ * endorse or promote products derived from this software without specific prior
+ * written permission.
+ *
+ * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+ * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-telemetry.addData("voltage", "%.1f volts", new Func<Double>() {
-    @Override public Double value() {
-        return getBatteryVoltage();
+
+package org.firstinspires.ftc.teamcode;
+
+import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
+
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+
+@TeleOp(name = "VoltsStarterBotTeleop", group = "VoltsStarterBotTeleop")
+//@Disabled
+public class VoltsStarterBotTeleop extends OpMode {
+
+    // initializes all motors
+    private DcMotor leftDrive = null;
+    private DcMotor rightDrive = null;
+    private DcMotorEx launcher = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private CRServo windmill = null;
+    private DcMotor intake = null;
+
+    // used for setting power sent to drive train left and right
+    double leftPower;
+    double rightPower;
+    
+
+    /*
+     * Code to run ONCE when the driver hits INIT
+     */
+    @Override
+    public void init() {
+        // This process helps with "Hardware Mapping"
+        // This connects the physical motors in the real world with 
+        // a software object that refers to that motor.
+        // The phrase in quotes must match the phrase in the Configure Robot mapping
+
+        leftDrive = hardwareMap.get(DcMotor.class, "left_drive");
+        rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
+        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
+        leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
+        rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
+        intake = hardwareMap.get(DcMotor.class, "intake");
+        windmill = hardwareMap.get(CRServo.class, "windmill");
+
+
+        // Keeping motors in brake mode is good practice on init
+        // This ensures that our motors start out in a predictable and safe mode on match start
+
+        leftDrive.setZeroPowerBehavior(BRAKE);
+        rightDrive.setZeroPowerBehavior(BRAKE);
+        launcher.setZeroPowerBehavior(BRAKE);
+        intake.setZeroPowerBehavior(BRAKE);
+
+        //This ensures that our servos start in a predictable and safe mode on match start
+        leftFeeder.setPower(0);
+        rightFeeder.setPower(0);
+        windmill.setPower(0);
+
+        /* Because we physically flipped one of the motors in the robot
+        we need to reverse the direction of one of the drivetrain motors
+        We can use .setDirection() to do this!
+        You must use either REVERSE or FORWARD in the parentheses to set the direction
+        */
+        //clockwise is considered forward
+
+        leftDrive.setDirection(DcMotor.Direction.REVERSE);
+        //Add that here!
+
+
+        /* Because we want our two intake servos to both spin towards the 
+        center of the robot, we need to reverse the direction of one of the servos
+        we can use .setDirection() to do this
+        You must use either REVERSE or FORWARD in the parentheses to set the direction
+        */
+        //clockwise is considered forward
+
+        //Add that here!!
+
+        leftFeeder.setDirection(DcMotor.Direction.REVERSE);
+
     }
-});
-```
 
-There's a few ways to rewrite the same snippet to be more concise by using 
-what's called a lambda (lamb-da) expression[1] from the new Java 8 editor support.
-
-The part of the code that simply defines what's called an "anonymous class"
-can be actually rewritten as a lambda expression.
-
-The anonymous class above is the following section:
-```
-new Func<Double>() {
-    @Override public Double value() {
-        return getBatteryVoltage();
+    /*
+     * Code to run REPEATEDLY after the driver hits INIT, but before they hit START
+     */
+    @Override
+    public void init_loop() {
     }
+
+    /*
+     * Code to run ONCE when the driver hits START
+     */
+    @Override
+    public void start() {
+    }
+
+    /*
+     * Code to run REPEATEDLY after the driver hits START but before they hit STOP
+     */
+    @Override
+    public void loop() {
+    
+        // Call to arcade drive
+        // Use left joystick x axis for turning (left and right)
+        // Use left joystick y axis for forward and backward
+        // We can get the values from the left joystick x axis through:
+        // gamepad1.left_stick_x
+        // We can get the values from the left joystick y axis through:
+        // gamepad1.left_stick_y
+        // We want to set the power sent to the motors equal to the controller values
+
+
+        double denominator = Math.max(1,(Math.abs(gamepad1.left_stick_y)+Math.abs(gamepad1.left_stick_x)));
+
+        leftPower = gamepad1.left_stick_y + gamepad1.left_stick_x;
+        rightPower = gamepad1.left_stick_y - gamepad1.left_stick_x;
+
+        leftDrive.setPower(leftPower/denominator);
+        rightDrive.setPower(rightPower/denominator);
+
+        // launcher
+        if(gamepad1.right_trigger>0.5){
+            launcher.setPower(.45);
+        }else{
+            launcher.setPower(0);
+        }
+        //windmill
+        if(gamepad1.right_trigger>0.5){
+            windmill.setPower(1);
+        }else{
+            windmill.setPower(0);
+        }
+
+        if(gamepad1.left_trigger>.5){
+            intake.setPower(.75);
+            leftFeeder.setPower(1);
+            rightFeeder.setPower(1);
+        }else{
+            intake.setPower(0);
+            leftFeeder.setPower(0);
+            rightFeeder.setPower(0);
+        }
+
+    }
+
+    /*
+     * Code to run ONCE after the driver hits STOP
+     */
+    @Override
+    public void stop() {
+    }
+
+    // takes in 
+    void arcadeDrive(double surge, double rotate) {
+    }
+
 }
-```
-
-What you actually care about is the return value (`getBatteryVoltage()`)
-of the function you defined, not the wrapping syntax (`new Func<Double>{...}`).
-
-As a general pattern, for a function that takes no arguments, you can remove
-the class declaration, method return type, and method name and the compiler
-will get what you are implying.
-
-To see this visually, this is the rewritten lambda expression:
-```
-() -> {
-    // this area wrapped by the curly braces is the lambda body
-    return getBatteryVoltage();
-}
-```
-
-This leaves the lambda body intact and is a useful pattern if your return value
-needs a multiline calculation.
-
-In this case, we only have the method return taking a single line, so we can
-"unwrap" the return expression:
-```
-() -> getBatteryVoltage()
-```
-
-This again leaves a bit of room to make more concise, applying the same pattern,
-what can we remove?
-
-```
-this::getBatteryVoltage
-```
-
-This is called a method reference, which requires only two things, the object and
-the method you want to call on the object,
-Advanced note: the `this` comes from the `this` that was implied indirectly in the anonymous class
-usage through a capture, but now you actually need to add this `this` reference.
-
-Put all together, the same snippet can be rewritten simply as:
-```
-telemetry.addData("voltage", "%.1f volts", this::getBatteryVoltage);
-```
-
-
-We're still bound by some limitations of the Android platform, you can check
-https://developer.android.com/studio/write/java8-support-table for known 
-limitations for more advanced features.
-
-### Known limitations
-- Android 6.0 Marshmallow devices cannot use Java 8 features
-- `IntStream` usage via direct usage can cause Robot Controller crashes. 
-  - You can use `Arrays.of(new int[]{1})` as a workaround.
-
-0: https://github.com/FIRST-Tech-Challenge/FtcRobotController/blob/00cbf344526d991ce33452437018af9f119d22d1/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptTelemetry.java#L110-L123
-1: https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html
-2: https://docs.oracle.com/javase/tutorial/java/javaOO/anonymousclasses.html#accessing
-
-
-
-
